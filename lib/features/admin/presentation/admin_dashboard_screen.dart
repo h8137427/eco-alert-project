@@ -251,17 +251,27 @@ class _PendingReportsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('community_reports')
-          .orderBy('timestamp', descending: true)
-          .snapshots(),
+      // تم إزالة orderBy من هنا لتجنب مشاكل الفهارس (Indexes)
+      stream: FirebaseFirestore.instance.collection('community_reports').snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) return const Center(child: Text('لا توجد بلاغات معلقة حالياً ✅', style: TextStyle(fontSize: 18)));
 
+        // 1. فلترة البلاغات المعلقة فقط
         final pendingDocs = snapshot.data!.docs.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
           return data['status'] == 'pending_verification';
         }).toList();
+
+        // 2. ترتيب البلاغات برمجياً (الأحدث أولاً) لتجنب أخطاء الفايربيز
+        pendingDocs.sort((a, b) {
+          final dataA = a.data() as Map<String, dynamic>;
+          final dataB = b.data() as Map<String, dynamic>;
+          final Timestamp? t1 = dataA['timestamp'] as Timestamp?;
+          final Timestamp? t2 = dataB['timestamp'] as Timestamp?;
+          if (t1 == null || t2 == null) return 0;
+          return t2.compareTo(t1);
+        });
 
         if (pendingDocs.isEmpty) {
           return const Center(child: Text('لا توجد بلاغات معلقة حالياً ✅', style: TextStyle(fontSize: 18)));
