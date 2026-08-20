@@ -137,7 +137,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
      setState(() => _isLoading = false);
   }
 
-  // 🌐 تعديل دالة الإبلاغ لدعم وضع الأوفلاين
+  // 🌐 تعديل دالة الإبلاغ لدعم إظهار الأخطاء الفورية للمستخدم
   Future<void> _submitCommunityReport(String type, String severity) async {
     setState(() => _isLoading = true);
     try {
@@ -183,6 +183,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
     } catch (e) {
       debugPrint("خطأ في رفع البلاغ: $e");
+      // عرض الخطأ الفعلي للمستخدم لاكتشاف المشكلة
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('فشل الإرسال، الخطأ: $e'), 
+            backgroundColor: Colors.red, 
+            duration: const Duration(seconds: 5) // إبقاء الرسالة لـ 5 ثواني لتتمكن من قراءتها
+          )
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
