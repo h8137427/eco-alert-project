@@ -5,9 +5,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'firebase_options.dart'; 
 import 'features/alerts/presentation/dashboard_screen.dart';
 import 'features/auth/presentation/login_screen.dart'; // استيراد شاشة تسجيل الدخول
-
-// تأكد من تعديل مسار الاستيراد هذا ليطابق مكان ملف fcm_service.dart في مشروعك
-import 'fcm_service.dart'; 
+import 'core/services/fcm_service.dart';
 
 void main() async {
   // 1. التأكد من تهيئة فلاتر قبل تنفيذ أي عمليات غير متزامنة
