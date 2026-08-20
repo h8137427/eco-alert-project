@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../chat/presentation/user_chat_screen.dart'; 
 
 class HazardDetailsScreen extends StatefulWidget {
   final Map<dynamic, dynamic> alert;
@@ -9,8 +10,8 @@ class HazardDetailsScreen extends StatefulWidget {
 }
 
 class _HazardDetailsScreenState extends State<HazardDetailsScreen> {
-  final TextEditingController _chatController = TextEditingController();
-
+  
+  // دالة لجلب الإرشادات بناءً على نوع الخطر
   List<String> _getSafetyInstructions(String type) {
     if (type.toLowerCase().contains('earthquake') || type == 'زلزال') {
       return [
@@ -32,36 +33,6 @@ class _HazardDetailsScreenState extends State<HazardDetailsScreen> {
       ];
     }
     return ['يرجى توخي الحذر والابتعاد عن منطقة الخطر. اتبع تعليمات الجهات الرسمية.'];
-  }
-
-  void _handleChatSubmit(String query) {
-    if (query.trim().isEmpty) return;
-    
-    String response = "يرجى مراجعة الإرشادات أعلاه. إذا كنت في خطر مباشر، اتصل بالطوارئ فوراً!";
-    if (query.contains('حريق') || query.contains('نار') || query.contains('دخان')) {
-      response = 'بخصوص الحريق: ابقَ منخفضاً لتجنب استنشاق الدخان، غطِ أنفك بقطعة قماش مبللة، واخرج فوراً عبر السلالم، لا تستخدم المصعد!';
-    } else if (query.contains('زلزال') || query.contains('هزة')) {
-      response = 'بخصوص الزلزال: اختبئ فوراً تحت طاولة متينة، تمسك جيداً، ولا تتحرك من مكانك حتى يتوقف الاهتزاز!';
-    }
-    
-    showDialog(
-      context: context, 
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        title: const Row(
-          children: [
-            Icon(Icons.smart_toy, color: Colors.blue), 
-            SizedBox(width: 10), 
-            Text('المساعد الذكي')
-          ]
-        ),
-        content: Text(response, style: const TextStyle(fontSize: 16)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('فهمت'))
-        ],
-      )
-    );
-    _chatController.clear();
   }
 
   @override
@@ -134,21 +105,39 @@ class _HazardDetailsScreenState extends State<HazardDetailsScreen> {
             const SizedBox(height: 30),
             
             const Divider(),
-            const Text('🤖 مساعد الطوارئ (Chatbot):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _chatController,
-              decoration: InputDecoration(
-                hintText: 'اسأل عن إجراءات السلامة (مثال: ماذا أفعل في الحريق؟)',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                prefixIcon: const Icon(Icons.chat_bubble_outline),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.send, color: Colors.blue),
-                  onPressed: () => _handleChatSubmit(_chatController.text),
+            const Text('🤖 طلب المساعدة الفورية:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 15),
+            
+            // الزر الجديد الذي يربط المستخدم بمحادثة الدعم الفني مباشرة
+            SizedBox(
+              width: double.infinity,
+              height: 55,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue[800],
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 2,
                 ),
+                icon: const Icon(Icons.support_agent, size: 28),
+                label: const Text(
+                  'التواصل المباشر مع إدارة الطوارئ', 
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const UserChatScreen()),
+                  );
+                },
               ),
-              onSubmitted: _handleChatSubmit,
             ),
+            const SizedBox(height: 10),
+            const Text(
+              'سيتم توجيهك لمحادثة مباشرة مع فريق الإدارة للحصول على الدعم والتوجيه.',
+              style: TextStyle(fontSize: 13, color: Colors.grey),
+              textAlign: TextAlign.center,
+            )
           ],
         ),
       ),
