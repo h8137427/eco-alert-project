@@ -16,6 +16,8 @@ void main() async {
   // 2. تهيئة قاعدة البيانات المحلية (Hive)
   await Hive.initFlutter();
   await Hive.openBox('alerts_cache_box');
+  await Hive.openBox('offline_reports_queue'); // طابور البلاغات المعلقة
+  await Hive.openBox('notifications_box');     // سجل الإشعارات المحلية
 
   // 3. تهيئة خدمات فايربيس بشكل صحيح باستخدام ملف الإعدادات
   try {
@@ -23,7 +25,7 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     
-    // 👉 السطر الجديد: لطلب إذن الإشعارات من المستخدم وتفعيل الخدمة
+    // 👉 طلب إذن الإشعارات من المستخدم وتفعيل الخدمة
     await FCMService.initializeFCM(); 
     
   } catch (e) {
@@ -54,7 +56,7 @@ class EcoAlertApp extends StatelessWidget {
         ),
       ),
       
-      // هنا التغيير: نستخدم StreamBuilder لمراقبة حالة المستخدم تلقائياً
+      // نستخدم StreamBuilder لمراقبة حالة المستخدم تلقائياً
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
