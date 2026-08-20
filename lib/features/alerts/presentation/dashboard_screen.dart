@@ -15,6 +15,7 @@ import '../../profile/presentation/profile_screen.dart';
 import '../../admin/presentation/admin_dashboard_screen.dart'; 
 import '../../auth/presentation/login_screen.dart';
 import '../../chat/presentation/user_chat_screen.dart';
+import 'notifications_screen.dart'; // 👈 استيراد شاشة الإشعارات الجديدة
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -85,7 +86,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() => _isOffline = !hasConnection);
     if (hasConnection) {
       await _syncFromFirestoreToLocal();
-      await _syncOfflineReports(); // محاولة رفع أي بلاغات سابقة معلقة عند بدء التطبيق
+      await _syncOfflineReports(); 
     }
     setState(() => _isLoading = false);
   }
@@ -106,7 +107,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  // 📴 دالة لرفع البلاغات التي تم إنشاؤها أثناء انقطاع الإنترنت
   Future<void> _syncOfflineReports() async {
     var queueBox = await Hive.openBox('offline_reports_queue');
     if (queueBox.isEmpty) return;
@@ -116,17 +116,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     for (var i = 0; i < queueBox.length; i++) {
       final report = queueBox.getAt(i) as Map<dynamic, dynamic>;
-      
-      // تحويل البيانات لتناسب فايربيس
       final firebaseReport = Map<String, dynamic>.from(report);
-      firebaseReport['timestamp'] = FieldValue.serverTimestamp(); // تحديث التوقيت لزمن الرفع
-      
+      firebaseReport['timestamp'] = FieldValue.serverTimestamp(); 
       final docRef = db.collection('community_reports').doc();
       batch.set(docRef, firebaseReport);
     }
 
     await batch.commit();
-    await queueBox.clear(); // مسح الطابور المحلي بعد الرفع بنجاح
+    await queueBox.clear(); 
     debugPrint('تم رفع البلاغات المؤجلة بنجاح.');
   }
 
@@ -137,14 +134,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
      setState(() => _isLoading = false);
   }
 
-  // 🌐 تعديل دالة الإبلاغ لدعم إظهار الأخطاء الفورية للمستخدم
   Future<void> _submitCommunityReport(String type, String severity) async {
     setState(() => _isLoading = true);
     try {
       Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
       final currentUser = FirebaseAuth.instance.currentUser;
       
-      // تجهيز حزمة البيانات
       final reportData = {
         'type': type,
         'severity': severity,
@@ -152,13 +147,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'status': 'pending_verification',
         'source': 'community',
         'userId': currentUser?.uid ?? 'anonymous',
-        'hasImage': _isImageAttached, // إشارة لوجود دليل صوري مع البلاغ
+        'hasImage': _isImageAttached,
       };
 
       if (_isOffline) {
-        // 📴 وضع عدم الاتصال: حفظ البلاغ محلياً (Offline Queue)
         var queueBox = await Hive.openBox('offline_reports_queue');
-        // نضيف وقتاً نصياً للحفظ المحلي
         reportData['local_timestamp'] = DateTime.now().toIso8601String(); 
         await queueBox.add(reportData);
         
@@ -171,7 +164,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           );
         }
       } else {
-        // 🌐 وضع الاتصال: رفع مباشر للفايربيس
         reportData['timestamp'] = FieldValue.serverTimestamp();
         await FirebaseFirestore.instance.collection('community_reports').add(reportData);
         
@@ -183,13 +175,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
     } catch (e) {
       debugPrint("خطأ في رفع البلاغ: $e");
-      // عرض الخطأ الفعلي للمستخدم لاكتشاف المشكلة
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('فشل الإرسال، الخطأ: $e'), 
             backgroundColor: Colors.red, 
-            duration: const Duration(seconds: 5) // إبقاء الرسالة لـ 5 ثواني لتتمكن من قراءتها
+            duration: const Duration(seconds: 5)
           )
         );
       }
@@ -286,6 +277,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           if (!_isAdmin)
             IconButton(icon: const Icon(Icons.refresh, color: Colors.white), tooltip: 'تحديث الكوارث', onPressed: _syncOpenData),
             
+          // 👈 تم إضافة زر الإشعارات هنا
+          if (!_isAdmin)
+            IconButton(
+              icon: const Icon(Icons.notifications_active, color: Colors.white), 
+              tooltip: 'سجل الإشعارات', 
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationsScreen()))
+            ),
+
           IconButton(icon: const Icon(Icons.map), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const MapScreen()))),
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
@@ -306,7 +305,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       body: Column(
         children: [
-          // 📴 مؤشر حالة الاتصال المتقدم في أعلى الشاشة
           NetworkStatusBanner(
             isOffline: _isOffline,
             onSyncPressed: () async {
@@ -315,7 +313,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               
               if (hasConnection) {
                 await _syncFromFirestoreToLocal();
-                await _syncOfflineReports(); // تفريغ الطابور ورفع البلاغات المتأخرة
+                await _syncOfflineReports(); 
                 
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -429,7 +427,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-// 📴 عنصر الشريط العلوي لمؤشر الاتصال
 class NetworkStatusBanner extends StatelessWidget {
   final bool isOffline;
   final VoidCallback onSyncPressed;
