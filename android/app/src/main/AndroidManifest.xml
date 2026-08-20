@@ -3,6 +3,9 @@
     <!-- صلاحيات الوصول إلى الموقع التي تمت إضافتها -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    
+    <!-- صلاحية إرسال الإشعارات (لأندرويد 13 فما فوق) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:label="eco_alert"
