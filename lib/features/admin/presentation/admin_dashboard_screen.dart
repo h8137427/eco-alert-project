@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart' as intl;
+import 'package:geocoding/geocoding.dart'; // إضافة مكتبة تحويل الإحداثيات إلى عناوين
 import 'admin_chats_screen.dart'; // استدعاء شاشة محادثات الدعم الفني
 
 class AdminDashboardScreen extends StatelessWidget {
@@ -204,6 +205,33 @@ class _PendingReportsTab extends StatelessWidget {
 
   Future<void> _approveReport(BuildContext context, String docId, Map<String, dynamic> data) async {
     try {
+      // إظهار رسالة للمستخدم أثناء محاولة جلب الإحداثيات
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('جاري جلب الموقع الحقيقي وتوثيق البلاغ... ⏳')));
+      }
+
+      String actualLocationName = 'موقع محدد من قبل مستخدم';
+      final geo = data['coordinates'];
+
+      // محاولة تحويل الإحداثيات إلى اسم مدينة أو شارع حقيقي
+      if (geo != null && geo['latitude'] != null && geo['longitude'] != null) {
+        try {
+          List<Placemark> placemarks = await placemarkFromCoordinates(geo['latitude'], geo['longitude']);
+          if (placemarks.isNotEmpty) {
+            Placemark place = placemarks.first;
+            // دمج الحقول المتاحة لتشكيل عنوان واضح (المدينة، الحي، الشارع)
+            actualLocationName = [place.locality, place.subLocality, place.street]
+                .where((e) => e != null && e.isNotEmpty)
+                .join('، ');
+            
+            // في حال عدم توفر بيانات دقيقة للمنطقة، استخدم اسم البلد كبديل أخير
+            if (actualLocationName.isEmpty) actualLocationName = place.country ?? 'موقع غير معروف';
+          }
+        } catch (e) {
+          debugPrint("خطأ في جلب اسم الموقع باستخدام Geocoding: $e");
+        }
+      }
+
       final db = FirebaseFirestore.instance;
       final batch = db.batch(); 
 
@@ -213,7 +241,7 @@ class _PendingReportsTab extends StatelessWidget {
         'title': 'خطر موثق من الإدارة: ${data['type']}',
         'type': data['type'],
         'severity': data['severity'],
-        'location_name': 'موقع محدد من قبل مستخدم',
+        'location_name': actualLocationName, // تم استبدال النص الثابت بالموقع الحقيقي
         'coordinates': data['coordinates'],
         'timestamp': FieldValue.serverTimestamp(),
         'source': 'Admin Verified',
@@ -226,9 +254,12 @@ class _PendingReportsTab extends StatelessWidget {
       }
 
       await batch.commit();
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم توثيق البلاغ ونشره بنجاح ✅')));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar(); // إخفاء رسالة التحميل
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم توثيق البلاغ ونشره بالموقع الحقيقي بنجاح ✅'), backgroundColor: Colors.green));
+      }
     } catch (e) {
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('حدث خطأ: $e')));
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('حدث خطأ: $e'), backgroundColor: Colors.red));
     }
   }
 
