@@ -7,7 +7,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:url_launcher/url_launcher.dart'; 
 import '../../../core/services/hazards_sync_service.dart';
 import '../../hazards_map/presentation/map_screen.dart';
 
@@ -136,22 +135,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
      await HazardsSyncService().fetchAndSaveEarthquakes();
      await _syncFromFirestoreToLocal();
      setState(() => _isLoading = false);
-  }
-
-  Future<void> _sendSOS() async {
-    setState(() => _isLoading = true);
-    try {
-      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-      final lat = position.latitude;
-      final lng = position.longitude;
-      final String message = "النجدة! أنا في حالة طوارئ. موقعي الحالي: https://maps.google.com/?q=$lat,$lng";
-      final Uri smsUri = Uri.parse('sms:?body=${Uri.encodeComponent(message)}');
-      if (await canLaunchUrl(smsUri)) await launchUrl(smsUri);
-    } catch (e) {
-      debugPrint("$e");
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
   }
 
   // 🌐 تعديل دالة الإبلاغ لدعم وضع الأوفلاين
@@ -292,11 +275,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           if (!_isAdmin)
             IconButton(icon: const Icon(Icons.refresh, color: Colors.white), tooltip: 'تحديث الكوارث', onPressed: _syncOpenData),
-          if (!_isAdmin)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
-              child: ElevatedButton.icon(style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white), icon: const Icon(Icons.sos, size: 18), label: const Text("طوارئ"), onPressed: _sendSOS),
-            ),
+            
           IconButton(icon: const Icon(Icons.map), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const MapScreen()))),
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
