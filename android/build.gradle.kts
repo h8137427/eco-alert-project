@@ -23,10 +23,16 @@ tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
 
+// 👇 الصيغة الصحيحة والآمنة لفرض إصدار الـ SDK في ملفات .kts
 subprojects {
-    afterEvaluate { project ->
-        if (project.hasProperty("android")) {
-            project.extensions.getByType<com.android.build.gradle.BaseExtension>().compileSdkVersion(36)
+    plugins.withId("com.android.application") {
+        extensions.configure<com.android.build.gradle.BaseExtension> {
+            compileSdkVersion(36)
+        }
+    }
+    plugins.withId("com.android.library") {
+        extensions.configure<com.android.build.gradle.BaseExtension> {
+            compileSdkVersion(36)
         }
     }
 }
